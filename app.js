@@ -56,19 +56,31 @@ app.post("/add", async (req, res) => {
 
 
 // ✅ Delete task (DELETE from database)
-app.get("/delete/:id", async (req, res) => {
-  const { id } = req.params;
+app.get("/", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM tasks ORDER BY id DESC");
 
-  console.log("Deleting task with ID:", id);
+    let taskList = result.rows
+      .map(
+        (t) =>
+          `<li>${t.title} <a href="/delete/${t.id}">Delete</a></li>`
+      )
+      .join("");
 
-  await pool.query(
-    "DELETE FROM tasks WHERE id = $1",
-    [id]
-  );
+    res.send(`
+      <h1>Task Manager</h1>
+      <form method="POST" action="/add">
+          <input name="task" placeholder="Enter task" required/>
+          <button>Add</button>
+      </form>
+      <ul>${taskList}</ul>
+    `);
 
-  res.redirect("/");
+  } catch (err) {
+    console.error("REAL ERROR:", err.message);
+    res.send("Error: " + err.message);
+  }
 });
-
 
 
 
