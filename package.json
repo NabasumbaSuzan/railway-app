@@ -2,9 +2,11 @@
   "name": "task-app",
   "version": "1.0.0",
   "main": "app.js",
+
   "scripts": {
-    "start": "node app.js"
-  },
+  "start": "node server.js"
+},
+  
   "dependencies": {
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
