@@ -1,22 +1,33 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+require("dotenv").config();
+
+const express = require("express");
+const bodyParser = require("body-parser");
+const { Pool } = require("pg");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// ✅ Connect to Railway PostgreSQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
+const PORT = process.env.PORT || 3000;
 
-let tasks = [];
 
-// Home route
-app.get('/', (req, res) => {
-    let taskList = tasks.map((t, i) => `<li>${t} <a href="/delete/${i}">Delete</a></li>`).join('');
-    res.send(`
+// ✅ Home route (READ from database)
+app.get("/", async (req, res) => {
+  const result = await pool.query("SELECT * FROM tasks ORDER BY id DESC");
+
+  let taskList = result.rows
+    .map(
+      (t) =>
+        `<li>${t.title} <a href="/delete/${t.id}">Delete</a></li>`
+    )
+    .join("");
+
+  res.send(`
         <h1>Task Manager</h1>
         <form method="POST" action="/add">
             <input name="task" placeholder="Enter task" required/>
@@ -26,17 +37,36 @@ app.get('/', (req, res) => {
     `);
 });
 
-// Add task
-app.post('/add', (req, res) => {
-    tasks.push(req.body.task);
-    res.redirect('/');
+
+// ✅ Add task (INSERT into database)
+app.post("/add", async (req, res) => {
+  const { task } = req.body;
+
+  await pool.query(
+    "INSERT INTO tasks (title) VALUES ($1)",
+    [task]
+  );
+
+  res.redirect("/");
 });
 
-// Delete task
-app.get('/delete/:id', (req, res) => {
-    tasks.splice(req.params.id, 1);
-    res.redirect('/');
+
+// ✅ Delete task (DELETE from database)
+app.get("/delete/:id", async (req, res) => {
+  const { id } = req.params;
+
+  await pool.query(
+    "DELETE FROM tasks WHERE id = $1",
+    [id]
+  );
+
+  res.redirect("/");
 });
 
 
-app.listen(3000, () => console.log('Server running on http://localhost:3000'));
+
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log("New deployment test");
+});
