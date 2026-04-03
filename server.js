@@ -7,6 +7,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ✅ Root route (VERY IMPORTANT)
+app.get("/", (req, res) => {
+  res.send("Task API is running 🚀");
+});
+
+// ✅ Health check route (for Railway)
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 /* CREATE task */
 app.post("/tasks", async (req, res) => {
   try {
@@ -45,6 +55,7 @@ app.delete("/tasks/:id", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
