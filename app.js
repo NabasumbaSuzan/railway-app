@@ -17,19 +17,23 @@ const PORT = process.env.PORT || 3000;
 
 
 // ✅ Home route (READ from database)
+a// ✅ Home route (READ from database with error handling)
 app.get("/", async (req, res) => {
-  const result = await pool.query("SELECT * FROM tasks ORDER BY id DESC");
+  try {
+    console.log("Route / hit");
 
-  console.log("Tasks fetched:", result.rows.length);
+    const result = await pool.query("SELECT * FROM tasks ORDER BY id DESC");
 
-  let taskList = result.rows
-    .map(
-      (t) =>
-        `<li>${t.title} <a href="/delete/${t.id}">Delete</a></li>`
-    )
-    .join("");
+    console.log("Tasks fetched:", result.rows.length);
 
-  res.send(`
+    let taskList = result.rows
+      .map(
+        (t) =>
+          `<li>${t.title} <a href="/delete/${t.id}">Delete</a></li>`
+      )
+      .join("");
+
+    res.send(`
         <h1>Task Manager</h1>
         <form method="POST" action="/add">
             <input name="task" placeholder="Enter task" required/>
@@ -37,8 +41,16 @@ app.get("/", async (req, res) => {
         </form>
         <ul>${taskList}</ul>
     `);
-});
 
+  } catch (err) {
+    console.error("🚨 REAL ERROR:", err.message);
+
+    res.status(500).send(`
+      <h1>Something broke</h1>
+      <p>${err.message}</p>
+    `);
+  }
+});
 
 // ✅ Add task (INSERT into database)
 app.post("/add", async (req, res) => {
@@ -56,31 +68,19 @@ app.post("/add", async (req, res) => {
 
 
 // ✅ Delete task (DELETE from database)
-app.get("/", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM tasks ORDER BY id DESC");
+app.get("/delete/:id", async (req, res) => {
+  const { id } = req.params;
 
-    let taskList = result.rows
-      .map(
-        (t) =>
-          `<li>${t.title} <a href="/delete/${t.id}">Delete</a></li>`
-      )
-      .join("");
+  console.log("Deleting task with ID:", id);
 
-    res.send(`
-      <h1>Task Manager</h1>
-      <form method="POST" action="/add">
-          <input name="task" placeholder="Enter task" required/>
-          <button>Add</button>
-      </form>
-      <ul>${taskList}</ul>
-    `);
+  await pool.query(
+    "DELETE FROM tasks WHERE id = $1",
+    [id]
+  );
 
-  } catch (err) {
-    console.error("REAL ERROR:", err.message);
-    res.send("Error: " + err.message);
-  }
+  res.redirect("/");
 });
+
 
 
 
