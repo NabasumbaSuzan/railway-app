@@ -20,6 +20,8 @@ const PORT = process.env.PORT || 3000;
 app.get("/", async (req, res) => {
   const result = await pool.query("SELECT * FROM tasks ORDER BY id DESC");
 
+  console.log("Tasks fetched:", result.rows.length);
+
   let taskList = result.rows
     .map(
       (t) =>
@@ -42,6 +44,8 @@ app.get("/", async (req, res) => {
 app.post("/add", async (req, res) => {
   const { task } = req.body;
 
+  console.log("Task added:", task);
+
   await pool.query(
     "INSERT INTO tasks (title) VALUES ($1)",
     [task]
@@ -54,6 +58,8 @@ app.post("/add", async (req, res) => {
 // ✅ Delete task (DELETE from database)
 app.get("/delete/:id", async (req, res) => {
   const { id } = req.params;
+
+  console.log("Deleting task with ID:", id);
 
   await pool.query(
     "DELETE FROM tasks WHERE id = $1",
