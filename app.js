@@ -7,6 +7,10 @@ const { Pool } = require("pg");
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.get("/health", (req, res) => {
+  res.send("OK");
+});
+
 // ✅ Connect to PostgreSQL (Railway)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
