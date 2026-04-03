@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 
 // ✅ Home route (READ from database)
-a// ✅ Home route (READ from database with error handling)
+// ✅ Home route (READ from database with error handling)
 app.get("/", async (req, res) => {
   try {
     console.log("Route / hit");
