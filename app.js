@@ -7,29 +7,39 @@ const { Pool } = require("pg");
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// ✅ Connect to Railway PostgreSQL
+// ✅ Connect to PostgreSQL (Railway)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: process.env.DATABASE_URL
+    ? { rejectUnauthorized: false }
+    : false,
 });
+
+// ✅ Check DB connection at startup
+pool.connect()
+  .then(() => console.log("✅ Connected to database"))
+  .catch(err => console.error("❌ DB Connection Error:", err.message));
 
 const PORT = process.env.PORT || 3000;
 
 
-// ✅ Home route (READ from database)
-// ✅ Home route (READ from database with error handling)
+// ✅ Home route (READ)
 app.get("/", async (req, res) => {
   try {
     console.log("Route / hit");
 
-    const result = await pool.query("SELECT * FROM tasks ORDER BY id DESC");
+    const result = await pool.query(
+      "SELECT * FROM tasks ORDER BY id DESC"
+    );
 
     console.log("Tasks fetched:", result.rows.length);
 
     let taskList = result.rows
       .map(
         (t) =>
-          `<li>${t.title} <a href="/delete/${t.id}">Delete</a></li>`
+          `<li>${t.title} 
+            <a href="/delete/${t.id}">Delete</a>
+          </li>`
       )
       .join("");
 
@@ -43,48 +53,58 @@ app.get("/", async (req, res) => {
     `);
 
   } catch (err) {
-    console.error("🚨 REAL ERROR:", err.message);
-
-    res.status(500).send(`
-      <h1>Something broke</h1>
-      <p>${err.message}</p>
-    `);
+    console.error("🚨 Home Error:", err.message);
+    res.status(500).send("Error loading tasks: " + err.message);
   }
 });
 
-// ✅ Add task (INSERT into database)
+
+// ✅ Add task (CREATE)
 app.post("/add", async (req, res) => {
-  const { task } = req.body;
+  try {
+    const { task } = req.body;
 
-  console.log("Task added:", task);
+    if (!task) {
+      return res.send("Task cannot be empty");
+    }
 
-  await pool.query(
-    "INSERT INTO tasks (title) VALUES ($1)",
-    [task]
-  );
+    console.log("Task added:", task);
 
-  res.redirect("/");
+    await pool.query(
+      "INSERT INTO tasks (title) VALUES ($1)",
+      [task]
+    );
+
+    res.redirect("/");
+  } catch (err) {
+    console.error("🚨 Add Error:", err.message);
+    res.status(500).send("Error adding task: " + err.message);
+  }
 });
 
 
-// ✅ Delete task (DELETE from database)
+// ✅ Delete task (DELETE)
 app.get("/delete/:id", async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  console.log("Deleting task with ID:", id);
+    console.log("Deleting task with ID:", id);
 
-  await pool.query(
-    "DELETE FROM tasks WHERE id = $1",
-    [id]
-  );
+    await pool.query(
+      "DELETE FROM tasks WHERE id = $1",
+      [id]
+    );
 
-  res.redirect("/");
+    res.redirect("/");
+  } catch (err) {
+    console.error("🚨 Delete Error:", err.message);
+    res.status(500).send("Error deleting task: " + err.message);
+  }
 });
 
 
-
-
+// ✅ Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
   console.log("New deployment test");
 });
