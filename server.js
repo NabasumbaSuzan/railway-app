@@ -1,3 +1,5 @@
+console.log("🚀 SERVER STARTING...");
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -21,15 +23,20 @@ app.get("/health", (req, res) => {
 app.post("/tasks", async (req, res) => {
   try {
     const { title } = req.body;
+
     const result = await pool.query(
       "INSERT INTO tasks (title) VALUES ($1) RETURNING *",
       [title]
     );
+
     res.json(result.rows[0]);
+
   } catch (err) {
-    console.error(err.message);
+    console.error("POST ERROR:", err.message);
+    res.status(500).send("Error creating task: " + err.message); // ✅ FIX
   }
 });
+
 
 /* READ tasks */
 app.get("/tasks", async (req, res) => {
@@ -37,20 +44,28 @@ app.get("/tasks", async (req, res) => {
     const result = await pool.query(
       "SELECT * FROM tasks ORDER BY id DESC"
     );
+
     res.json(result.rows);
+
   } catch (err) {
-    console.error(err.message);
+    console.error("GET ERROR:", err.message);
+    res.status(500).send("Error fetching tasks: " + err.message); // ✅ FIX
   }
 });
+
 
 /* DELETE task */
 app.delete("/tasks/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
     await pool.query("DELETE FROM tasks WHERE id = $1", [id]);
+
     res.json("Task deleted");
+
   } catch (err) {
-    console.error(err.message);
+    console.error("DELETE ERROR:", err.message);
+    res.status(500).send("Error deleting task: " + err.message); // ✅ FIX
   }
 });
 
@@ -58,4 +73,13 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+
+process.on("uncaughtException", (err) => {
+  console.error("💥 Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("💥 Unhandled Rejection:", err);
 });
